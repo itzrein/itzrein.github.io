@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#060608">
+<title>Rein. — rein.exch</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --accent:  #c0392b;
+  --accent2: #e74c3c;
+  --dnd:     #ed4245;
+  --online:  #3ba55d;
+  --idle:    #faa61a;
+  --bg:      #060608;
+  --glass:   rgba(10,10,15,0.75);
+  --border:  rgba(255,255,255,0.07);
+  --muted:   #4a4a58;
+}
+*, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
+html { scroll-behavior:smooth; }
+body {
+  font-family:'DM Sans',sans-serif;
+  background:var(--bg);
+  min-height:100vh; min-height:100dvh;
+  overflow-x:hidden; overflow-y:auto;
+  display:flex; align-items:center; justify-content:center;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* PAGE OVERLAY */
+#page-overlay {
+  position:fixed; inset:0; z-index:9000;
+  background:var(--bg);
+  display:flex; align-items:center; justify-content:center;
+  transition:opacity 0.7s ease;
+}
+#page-overlay.fade-out { opacity:0; pointer-events:none; }
+.overlay-logo {
+  font-family:'Syne',sans-serif; font-size:28px; font-weight:800;
+  color:#fff; letter-spacing:-1px;
+  opacity:0; animation:overlayPulse 1.2s ease forwards;
+}
+.overlay-logo span { color:var(--accent2); }
+@keyframes overlayPulse {
+  0%{opacity:0;transform:scale(.9)} 60%{opacity:1;transform:scale(1.02)} 100%{opacity:1;transform:scale(1)}
+}
+
+/* BACKGROUND */
+#aurora-canvas { position:fixed; inset:0; z-index:0; pointer-events:none; }
+.bg-grid { position:fixed; inset:0; z-index:1; overflow:hidden; pointer-events:none; }
+.bg-grid::before {
+  content:''; position:absolute; width:220%; height:220%; top:-60%; left:-60%;
+  background-image:
+    linear-gradient(rgba(180,30,20,0.10) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(180,30,20,0.10) 1px,transparent 1px);
+  background-size:55px 55px;
+  transform:perspective(700px) rotateX(58deg); transform-origin:center 65%;
+  animation:gridScroll 16s linear infinite;
+  mask-image:radial-gradient(ellipse at 50% 85%,black 15%,transparent 68%);
+  -webkit-mask-image:radial-gradient(ellipse at 50% 85%,black 15%,transparent 68%);
+}
+@keyframes gridScroll { from{background-position:0 0} to{background-position:0 55px} }
+.orb { position:fixed; border-radius:50%; pointer-events:none; filter:blur(80px); z-index:2; }
+.orb-1 { width:520px;height:520px; background:radial-gradient(circle,rgba(160,18,8,0.24) 0%,transparent 70%); top:-160px;left:-140px; animation:orb1 24s ease-in-out infinite; }
+.orb-2 { width:400px;height:400px; background:radial-gradient(circle,rgba(90,5,55,0.16) 0%,transparent 70%); bottom:-120px;right:-100px; animation:orb2 30s ease-in-out infinite; }
+.orb-3 { width:280px;height:280px; background:radial-gradient(circle,rgba(175,25,15,0.12) 0%,transparent 70%); top:38%;left:58%; animation:orb3 20s ease-in-out infinite; }
+@keyframes orb1 { 0%,100%{transform:translate(0,0)} 33%{transform:translate(55px,70px)} 66%{transform:translate(-35px,45px)} }
+@keyframes orb2 { 0%,100%{transform:translate(0,0)} 40%{transform:translate(-65px,-55px)} 70%{transform:translate(45px,-25px)} }
+@keyframes orb3 { 0%,100%{transform:translate(0,0)} 50%{transform:translate(-70px,55px)} }
+.scanlines { position:fixed;inset:0;z-index:3;pointer-events:none; background:repeating-linear-gradient(to bottom,transparent 0px,transparent 3px,rgba(0,0,0,0.04) 3px,rgba(0,0,0,0.04) 4px); opacity:.4; }
+.vignette { position:fixed;inset:0;z-index:4;pointer-events:none; background:radial-gradient(ellipse at 50% 50%,transparent 28%,rgba(4,4,7,0.92) 100%); }
+#particles { position:fixed;inset:0;z-index:5;pointer-events:none; }
+
+/* LAYOUT */
+.page {
+  position:relative; z-index:10;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:14px;
+  padding:max(28px,env(safe-area-inset-top)) 16px max(28px,env(safe-area-inset-bottom));
+  width:100%; min-height:100vh; min-height:100dvh;
+}
+
+/* GLASS CARD */
+.glass-card {
+  background:var(--glass);
+  border:1px solid var(--border);
+  border-radius:22px;
+  backdrop-filter:blur(32px) saturate(160%);
+  -webkit-backdrop-filter:blur(32px) saturate(160%);
+  position:relative; overflow:hidden;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.03),
+    0 2px 4px rgba(0,0,0,0.35),
+    0 20px 55px rgba(0,0,0,0.65),
+    0 0 70px rgba(192,57,43,0.05),
+    inset 0 1px 0 rgba(255,255,255,0.06);
+}
+.glass-card::after {
+  content:''; position:absolute; inset:0;
+  background:linear-gradient(105deg,transparent 35%,rgba(255,255,255,0.04) 50%,transparent 65%);
+  transform:translateX(-100%); transition:transform 0.6s ease; pointer-events:none;
+}
+.glass-card:hover::after { transform:translateX(100%); }
+
+.card-top-strip {
+  height:1px;
+  background:linear-gradient(90deg,transparent 0%,rgba(192,57,43,0.55) 30%,rgba(231,76,60,0.85) 50%,rgba(192,57,43,0.55) 70%,transparent 100%);
+  position:relative;
+}
+.card-top-strip::after {
+  content:''; position:absolute; top:0; left:20%; right:20%; height:10px;
+  background:linear-gradient(to bottom,rgba(192,57,43,0.22),transparent);
+}
+
+/* PROFILE CARD */
+.profile-card { width:100%; max-width:340px; padding-bottom:26px; opacity:0; transform:translateY(30px); animation:riseUp 0.9s 0.8s cubic-bezier(0.16,1,0.3,1) forwards; }
+
+/* AVATAR */
+.profile-avatar-wrap { display:flex; justify-content:center; padding-top:28px; position:relative; }
+.avatar-ring {
+  width:88px; height:88px; border-radius:50%;
+  background:conic-gradient(from 180deg,#8b0000,#c0392b,#e74c3c,#c0392b,#8b0000,#c0392b,#8b0000);
+  padding:2.5px; flex-shrink:0;
+  box-shadow:0 0 22px rgba(192,57,43,0.5),0 0 50px rgba(192,57,43,0.15);
+}
+.avatar-inner {
+  width:100%; height:100%; border-radius:50%;
+  background:linear-gradient(145deg,#1c0606,#2e0b0b);
+  overflow:hidden; display:flex; align-items:center; justify-content:center;
+  font-size:40px; border:2px solid #09090d;
+}
+.avatar-inner img { width:100%; height:100%; object-fit:cover; }
+.profile-name { font-family:'Syne',sans-serif; font-size:22px; font-weight:700; color:#fff; text-align:center; margin-top:14px; letter-spacing:-0.4px; }
+.profile-handle { font-size:12px; color:var(--muted); text-align:center; margin-top:3px; letter-spacing:0.3px; }
+
+/* ACTIVITY CARD */
+.activity-card {
+  margin:14px 14px 0;
+  background:rgba(0,0,0,0.28);
+  border:1px solid rgba(255,255,255,0.07);
+  border-radius:14px; padding:10px 12px;
+  min-height:58px; display:flex; align-items:center;
+  transition:all 0.35s ease;
+}
+.activity-card:hover { background:rgba(0,0,0,0.38); border-color:rgba(255,255,255,0.11); }
+.act-loading { display:flex; align-items:center; gap:8px; width:100%; }
+.act-dot-loader { display:flex; gap:3px; }
+.act-dot-loader span { width:4px; height:4px; border-radius:50%; background:var(--muted); animation:loaderDot 1.2s ease-in-out infinite; }
+.act-dot-loader span:nth-child(2){animation-delay:.2s} .act-dot-loader span:nth-child(3){animation-delay:.4s}
+@keyframes loaderDot{0%,80%,100%{opacity:.3;transform:scale(.8)}40%{opacity:1;transform:scale(1)}}
+.act-row { display:none; align-items:center; gap:10px; width:100%; }
+.act-icons { position:relative; flex-shrink:0; width:38px; height:38px; }
+.act-app-icon {
+  width:38px; height:38px; border-radius:50%;
+  background:transparent;
+  display:flex; align-items:center; justify-content:center;
+  overflow:visible; flex-shrink:0; position:relative;
+}
+.act-app-icon .avatar-img { width:38px; height:38px; border-radius:50%; object-fit:cover; display:block; }
+.act-app-icon .deco-img { position:absolute; inset:-6px; width:calc(100% + 12px); height:calc(100% + 12px); pointer-events:none; z-index:2; object-fit:contain; }
+.act-status-pip {
+  position:absolute; bottom:-2px; right:-2px;
+  width:13px; height:13px; border-radius:50%;
+  background:var(--dnd); border:2px solid #0a0a0e;
+  box-shadow:0 0 6px rgba(237,66,69,0.7); transition:background 0.4s;
+}
+.act-status-pip.online  { background:var(--online); box-shadow:0 0 6px rgba(59,165,93,0.8); }
+.act-status-pip.idle    { background:var(--idle);   box-shadow:0 0 6px rgba(250,166,26,0.8); }
+.act-status-pip.offline { background:#747f8d; box-shadow:none; }
+.act-status-pip.dnd     { background:var(--dnd); }
+.act-info { flex:1; min-width:0; }
+.act-app-name { font-size:9.5px; color:var(--muted); letter-spacing:0.5px; text-transform:uppercase; font-weight:600; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; display:flex; align-items:center; gap:5px; }
+.act-app-name .app-tag { background:rgba(255,255,255,0.07); border-radius:4px; padding:1px 5px; font-size:9px; }
+.act-username { font-family:'Syne',sans-serif; font-size:13px; font-weight:700; color:#fff; margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.act-detail { font-size:10.5px; color:var(--muted); margin-top:1px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.act-game-icon { width:40px; height:40px; border-radius:10px; overflow:hidden; flex-shrink:0; background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.08); display:flex; align-items:center; justify-content:center; }
+.act-game-icon img { width:100%; height:100%; object-fit:cover; border-radius:9px; }
+.act-game-icon-placeholder { font-size:20px; }
+
+/* SPARKLES */
+.sparkles { display:flex; justify-content:center; gap:5px; margin:14px 0 2px; }
+.sparkle { width:3px; height:3px; border-radius:50%; background:rgba(255,255,255,0.1); animation:twinkle 2.4s infinite; }
+.sparkle:nth-child(2){animation-delay:.48s} .sparkle:nth-child(3){animation-delay:.96s}
+.sparkle:nth-child(4){animation-delay:1.44s} .sparkle:nth-child(5){animation-delay:1.92s}
+
+/* SOCIAL */
+.social-links { display:flex; align-items:center; justify-content:center; gap:11px; margin-top:16px; padding:0 20px; }
+.social-btn {
+  width:46px; height:46px;
+  background:rgba(255,255,255,0.03); border:1px solid rgba(255,255,255,0.07);
+  border-radius:14px; display:flex; align-items:center; justify-content:center;
+  color:rgba(255,255,255,0.38); text-decoration:none; flex-shrink:0;
+  transition:all 0.28s cubic-bezier(0.34,1.56,0.64,1); position:relative; overflow:hidden;
+}
+.social-btn::before { content:''; position:absolute; inset:0; background:radial-gradient(circle at 50% 120%,rgba(192,57,43,0.18),transparent 65%); opacity:0; transition:opacity 0.3s; }
+.social-btn:hover::before { opacity:1; }
+.social-btn:hover { border-color:rgba(192,57,43,0.42); color:#fff; transform:translateY(-4px) scale(1.06); box-shadow:0 8px 22px rgba(192,57,43,0.26); }
+.social-btn svg { width:19px; height:19px; position:relative; z-index:1; }
+
+/* MUSIC PLAYER */
+.music-card {
+  width:100%; max-width:340px; padding:0;
+  display:none; opacity:0; transform:translateY(12px);
+  transition:opacity 0.5s ease, transform 0.5s cubic-bezier(0.16,1,0.3,1);
+}
+.music-card.spotify-active { display:block; }
+.music-card.spotify-visible { opacity:1; transform:translateY(0); }
+.music-header { display:flex; align-items:center; gap:10px; padding:14px 16px 12px; cursor:pointer; user-select:none; }
+.music-header-left { display:flex; align-items:center; gap:10px; flex:1; min-width:0; }
+.music-art { width:42px; height:42px; border-radius:8px; background:linear-gradient(135deg,#1a0505,#3d0c0c); flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center; position:relative; }
+.music-art img { width:100%; height:100%; object-fit:cover; }
+.music-card.playing .music-meta { flex:1; min-width:0; }
+.music-title { font-family:'Syne',sans-serif; font-size:13px; font-weight:600; color:#fff; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.music-artist { font-size:11px; color:var(--muted); margin-top:1px; }
+.music-controls-mini { display:flex; align-items:center; gap:8px; }
+.btn-icon { background:none; border:none; cursor:pointer; color:rgba(255,255,255,0.4); display:flex; align-items:center; justify-content:center; transition:color 0.2s,transform 0.2s; padding:4px; }
+.btn-icon:hover { color:#fff; transform:scale(1.1); }
+.btn-play { width:32px; height:32px; background:var(--accent); border:none; cursor:pointer; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff; flex-shrink:0; box-shadow:0 0 12px rgba(192,57,43,0.5); transition:all 0.2s; }
+.btn-play:hover { background:var(--accent2); transform:scale(1.08); box-shadow:0 0 18px rgba(231,76,60,0.7); }
+.btn-play svg { width:14px; height:14px; }
+.music-expanded { max-height:0; overflow:hidden; transition:max-height 0.4s cubic-bezier(0.16,1,0.3,1); padding:0 16px; }
+.music-card.open .music-expanded { max-height:120px; }
+.progress-wrap { padding:0 0 4px; }
+.progress-bar { width:100%; height:3px; background:rgba(255,255,255,0.1); border-radius:3px; cursor:pointer; position:relative; margin-bottom:4px; }
+.progress-fill { height:100%; width:0%; background:linear-gradient(90deg,var(--accent),var(--accent2)); border-radius:3px; transition:width 0.5s linear; position:relative; }
+.progress-fill::after { content:''; position:absolute; right:-4px; top:-3px; width:9px; height:9px; border-radius:50%; background:#fff; box-shadow:0 0 5px rgba(255,255,255,0.6); }
+.progress-time { display:flex; justify-content:space-between; font-size:10px; color:var(--muted); margin-top:2px; }
+.music-bottom { display:flex; align-items:center; justify-content:space-between; padding:8px 0 14px; }
+.music-full-controls { display:flex; align-items:center; gap:14px; }
+.music-label { font-size:10px; color:var(--muted); display:flex; align-items:center; gap:4px; }
+.music-label svg { width:12px; height:12px; color:var(--accent2); }
+
+/* CURSOR TRAIL */
+.cursor-trail { position:fixed; pointer-events:none; z-index:9999; width:5px; height:5px; border-radius:50%; background:rgba(192,57,43,0.7); transform:translate(-50%,-50%); transition:opacity 0.4s; }
+
+/* ANIMATIONS */
+@keyframes riseUp    { to{opacity:1;transform:translateY(0)} }
+@keyframes spin      { to{transform:rotate(360deg)} }
+@keyframes twinkle   { 0%,100%{background:rgba(255,255,255,0.08);transform:scale(1)} 50%{background:rgba(200,50,40,0.6);transform:scale(1.7)} }
+
+/* MOBILE */
+@media(max-width:380px){
+  .profile-card,.music-card{border-radius:18px}
+  .avatar-ring{width:76px;height:76px}
+  .profile-name{font-size:19px}
+  .social-btn{width:44px;height:44px;border-radius:12px}
+  .social-links{gap:9px}
+}
+@media(hover:none) and (pointer:coarse){
+  .social-btn{-webkit-tap-highlight-color:transparent}
+  .cursor-trail{display:none}
+  .social-btn:hover{transform:none}
+}
+
+/* Redirect arrow on activity cards */
+.activity-card-wrap { position:relative; margin:14px 14px 0; }
+.activity-card-wrap .activity-card { margin:0; }
+.act-redirect {
+  position:absolute; top:8px; right:8px;
+  width:22px; height:22px;
+  display:flex; align-items:center; justify-content:center;
+  color:rgba(255,255,255,0.18); text-decoration:none;
+  transition:color 0.2s, transform 0.2s; z-index:5;
+}
+.act-redirect:hover { color:rgba(255,255,255,0.65); transform:translate(1px,-1px); }
+.act-redirect svg { width:13px; height:13px; }
+</style>
+</head>
+<body>
+
+<div id="page-overlay"><div class="overlay-logo">Rein<span>.</span></div></div>
+
+<canvas id="aurora-canvas"></canvas>
+<div class="bg-grid"></div>
+<div class="orb orb-1"></div><div class="orb orb-2"></div><div class="orb orb-3"></div>
+<div class="scanlines"></div>
+<div class="vignette"></div>
+<canvas id="particles"></canvas>
+
+<div class="page">
+
+  <!-- PROFILE CARD -->
+  <div class="profile-card glass-card">
+    <div class="card-top-strip"></div>
+    <div class="profile-avatar-wrap">
+      <div class="avatar-ring">
+        <div class="avatar-inner">
+          <img src="https://cdn.discordapp.com/avatars/1297346059798052885/173cf98e72b322d1099af74c7ceec019.png?size=256" alt="Rein." onerror="this.style.display='none';this.parentNode.innerHTML='🥷'">
+        </div>
+      </div>
+    </div>
+    <div class="profile-name">Rein.</div>
+    <div class="profile-handle">@rein.exch</div>
+    <div class="profile-handle">1297346059798052885</div>
+
+    <div class="activity-card-wrap">
+      <div class="activity-card">
+        <div class="act-loading" id="actLoading">
+          <div class="act-dot-loader"><span></span><span></span><span></span></div>
+          <span style="font-size:11px;color:var(--muted)">fetching presence…</span>
+        </div>
+        <div class="act-row" id="actRow">
+          <div class="act-icons">
+            <div class="act-app-icon" id="actAppIcon">
+              <img class="avatar-img"
+                src="https://cdn.discordapp.com/avatars/1297346059798052885/173cf98e72b322d1099af74c7ceec019.png?size=128"
+                alt="Rein." onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+              <img class="deco-img"
+                src="https://cdn.discordapp.com/avatar-decoration-presets/a_3c97a2d37f433a7913a1c7b7a735d000.png" alt="">
+            </div>
+            <div class="act-status-pip dnd" id="actStatusPip"></div>
+          </div>
+          <div class="act-info">
+            <div class="act-app-name" id="actAppName"><span>Discord</span></div>
+            <div class="act-username" id="actUsername">rein.exch</div>
+            <div class="act-detail" id="actDetail">Do Not Disturb</div>
+          </div>
+          <div class="act-game-icon" id="actGameIcon" style="display:none">
+            <div class="act-game-icon-placeholder">🎮</div>
+          </div>
+        </div>
+      </div>
+      <a href="https://discord.com/users/1297346059798052885" class="act-redirect" target="_blank" rel="noopener" title="Open Discord profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+    </div>
+
+
+    <!-- Discord Rich Presence Activity Card — Account 2 (itzrein4u) -->
+    <div class="activity-card-wrap">
+      <div class="activity-card" id="activityCard2">
+        <div class="act-loading" id="actLoading2">
+          <div class="act-dot-loader"><span></span><span></span><span></span></div>
+          <span style="font-size:11px;color:var(--muted)">fetching presence…</span>
+        </div>
+        <div class="act-row" id="actRow2">
+          <div class="act-icons">
+            <div class="act-app-icon" id="actAppIcon2">
+              <img class="avatar-img"
+                src="https://cdn.discordapp.com/avatars/1253669815659532329/0d1303d6ba252f0423d96e65421cf637.png?size=128"
+                alt="Rein."
+                onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'">
+              <img class="deco-img"
+                src="https://cdn.discordapp.com/avatar-decoration-presets/a_fc02e20ceb188461d1944825d2b3bfb3.png"
+                alt="">
+            </div>
+            <div class="act-status-pip dnd" id="actStatusPip2"></div>
+          </div>
+          <div class="act-info">
+            <div class="act-app-name" id="actAppName2"><span>Discord</span></div>
+            <div class="act-username" id="actUsername2">itzrein4u</div>
+            <div class="act-detail" id="actDetail2">Do Not Disturb</div>
+          </div>
+          <div class="act-game-icon" id="actGameIcon2" style="display:none">
+            <div class="act-game-icon-placeholder">🎮</div>
+          </div>
+        </div>
+      </div>
+      <a href="https://discord.com/users/1253669815659532329" class="act-redirect" target="_blank" rel="noopener" title="Open Discord profile">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+      </a>
+    </div>
+
+    <div class="sparkles">
+      <div class="sparkle"></div><div class="sparkle"></div><div class="sparkle"></div>
+      <div class="sparkle"></div><div class="sparkle"></div>
+    </div>
+
+    <div class="social-links">
+      <a href="https://discord.com/users/1297346059798052885" class="social-btn" title="Discord" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.27 5.33C17.94 4.71 16.5 4.26 15 4a.09.09 0 0 0-.07.03c-.18.33-.39.76-.53 1.09a16.09 16.09 0 0 0-4.8 0c-.14-.34-.35-.76-.54-1.09c-.01-.02-.04-.03-.07-.03c-1.5.26-2.93.71-4.27 1.33c-.01 0-.02.01-.03.02c-2.72 3.99-3.46 7.87-3.1 11.7c0 .02.01.04.03.05c1.8 1.32 3.53 2.12 5.24 2.65c.03.01.06 0 .07-.02c.4-.55.76-1.13 1.07-1.74c.02-.04 0-.08-.04-.09c-.57-.22-1.11-.48-1.64-.78c-.04-.02-.04-.08-.01-.11c.11-.08.22-.17.33-.25c.02-.02.05-.02.07-.01c3.44 1.57 7.15 1.57 10.55 0c.02-.01.05-.01.07.01c.11.09.22.17.33.26c.04.03.04.09-.01.11c-.52.31-1.07.56-1.64.78c-.04.01-.05.06-.04.09c.32.61.68 1.19 1.07 1.74c.03.01.06.02.09.01c1.72-.53 3.45-1.33 5.25-2.65c.02-.01.03-.03.03-.05c.42-4.37-.71-8.22-3.1-11.7c-.01-.01-.02-.02-.04-.02zM8.52 14.91c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.84 2.12-1.89 2.12zm6.97 0c-1.03 0-1.89-.95-1.89-2.12s.84-2.12 1.89-2.12c1.06 0 1.9.96 1.89 2.12c0 1.17-.83 2.12-1.89 2.12z"/></svg>
+      </a>
+      <a href="https://github.com/itzrein" class="social-btn" title="GitHub" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 .297c-6.63 0-12 5.373-12 12 0 5.303 3.438 9.8 8.205 11.385.6.113.82-.258.82-.577 0-.285-.01-1.04-.015-2.04-3.338.724-4.042-1.61-4.042-1.61C4.422 18.07 3.633 17.7 3.633 17.7c-1.087-.744.084-.729.084-.729 1.205.084 1.838 1.236 1.838 1.236 1.07 1.835 2.809 1.305 3.495.998.108-.776.417-1.305.76-1.605-2.665-.3-5.466-1.332-5.466-5.93 0-1.31.465-2.38 1.235-3.22-.135-.303-.54-1.523.105-3.176 0 0 1.005-.322 3.3 1.23.96-.267 1.98-.399 3-.405 1.02.006 2.04.138 3 .405 2.28-1.552 3.285-1.23 3.285-1.23.645 1.653.24 2.873.12 3.176.765.84 1.23 1.91 1.23 3.22 0 4.61-2.805 5.625-5.475 5.92.42.36.81 1.096.81 2.22 0 1.606-.015 2.896-.015 3.286 0 .315.21.69.825.57C20.565 22.092 24 17.592 24 12.297c0-6.627-5.373-12-12-12"/></svg>
+      </a>
+      <a href="https://t.me/itzrein" class="social-btn" title="Telegram" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M11.944 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0a12 12 0 0 0-.056 0zm4.962 7.224c.1-.002.321.023.465.14a.506.506 0 0 1 .171.325c.016.093.036.306.02.472-.18 1.898-.962 6.502-1.36 8.627-.168.9-.499 1.201-.82 1.23-.696.065-1.225-.46-1.9-.902-1.056-.693-1.653-1.124-2.678-1.8-1.185-.78-.417-1.21.258-1.91.177-.184 3.247-2.977 3.307-3.23.007-.032.014-.15-.056-.212s-.174-.041-.249-.024c-.106.024-1.793 1.14-5.061 3.345-.48.33-.913.49-1.302.48-.428-.008-1.252-.241-1.865-.44-.752-.245-1.349-.374-1.297-.789.027-.216.325-.437.893-.663 3.498-1.524 5.83-2.529 6.998-3.014 3.332-1.386 4.025-1.627 4.476-1.635z"/></svg>
+      </a>
+      <a href="https://open.spotify.com/user/312crqz7hl3ny6x4mubfnymzfowa" class="social-btn" title="Spotify" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+      </a>
+    </div>
+  </div>
+
+  <!-- MUSIC PLAYER — shows only when Spotify is active -->
+  <div class="music-card glass-card" id="musicCard">
+    <div class="card-top-strip"></div>
+    <div class="music-header">
+      <div class="music-header-left">
+        <div class="music-art" id="musicArt"></div>
+        <div class="music-meta">
+          <div class="music-title" id="musicTitle">—</div>
+          <div class="music-artist" id="musicArtist">—</div>
+        </div>
+      </div>
+      <div class="music-label">
+        <svg viewBox="0 0 24 24" fill="currentColor" style="width:14px;height:14px;color:#1DB954"><path d="M12 0C5.4 0 0 5.4 0 12s5.4 12 12 12 12-5.4 12-12S18.66 0 12 0zm5.521 17.34c-.24.359-.66.48-1.021.24-2.82-1.74-6.36-2.101-10.561-1.141-.418.122-.779-.179-.899-.539-.12-.421.18-.78.54-.9 4.56-1.021 8.52-.6 11.64 1.32.42.18.479.659.301 1.02zm1.44-3.3c-.301.42-.841.6-1.262.3-3.239-1.98-8.159-2.58-11.939-1.38-.479.12-1.02-.12-1.14-.6-.12-.48.12-1.021.6-1.141C9.6 9.9 15 10.561 18.72 12.84c.361.181.54.78.241 1.2zm.12-3.36C15.24 8.4 8.82 8.16 5.16 9.301c-.6.179-1.2-.181-1.38-.721-.18-.601.18-1.2.72-1.381 4.26-1.26 11.28-1.02 15.721 1.621.539.3.719 1.02.419 1.56-.299.421-1.02.599-1.559.3z"/></svg>
+        <span style="font-size:10px;color:var(--muted)">Listening on Spotify</span>
+      </div>
+    </div>
+    <div style="padding:0 16px 14px;">
+      <div class="progress-bar" id="progressBar" style="cursor:default;">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+      <div class="progress-time">
+        <span id="timeElapsed">0:00</span>
+        <span id="timeDuration">0:00</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* PAGE TRANSITION */
+window.addEventListener('load',()=>{
+  setTimeout(()=>{
+    const ov=document.getElementById('page-overlay');
+    ov.classList.add('fade-out');
+    setTimeout(()=>ov.remove(),800);
+  },1400);
+});
+
+/* WEBGL AURORA */
+(function(){
+  const c=document.getElementById('aurora-canvas');
+  const gl=c.getContext('webgl')||c.getContext('experimental-webgl');
+  if(!gl){c.style.display='none';return;}
+  const r=()=>{c.width=innerWidth;c.height=innerHeight;gl.viewport(0,0,c.width,c.height);};
+  r();window.addEventListener('resize',r);
+  const VS=`attribute vec2 a;void main(){gl_Position=vec4(a,0,1);}`;
+  const FS=`precision highp float;uniform vec2 R;uniform float T;
+  float h(vec2 p){p=fract(p*vec2(234.34,435.345));p+=dot(p,p+34.23);return fract(p.x*p.y);}
+  float n(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(h(i),h(i+vec2(1,0)),f.x),mix(h(i+vec2(0,1)),h(i+vec2(1,1)),f.x),f.y);}
+  float fbm(vec2 p){float v=0.,a=.5;for(int i=0;i<6;i++){v+=a*n(p);p=p*2.1+vec2(1.7,9.2);a*=.5;}return v;}
+  void main(){
+    vec2 uv=gl_FragCoord.xy/R;uv.y=1.-uv.y;float t=T*.13;
+    vec2 q=vec2(fbm(uv+vec2(0,t*.44)),fbm(uv+vec2(5.2,t*.37)));
+    vec2 r=vec2(fbm(uv+4.*q+vec2(1.7+t*.21,9.2)),fbm(uv+4.*q+vec2(8.3+t*.17,2.8)));
+    float f=fbm(uv+4.2*r);
+    vec3 col=mix(vec3(.014,.007,.017),vec3(.25,.04,.04),clamp(f*f*3.8,0.,1.));
+    col=mix(col,vec3(.44,.06,.06),clamp(length(q)*1.1,0.,1.));
+    col=mix(col,vec3(.07,.014,.024),clamp(length(r.x)*.8,0.,1.));
+    col+=vec3(0.,.003,.011)*(1.-f);
+    vec2 vd=uv-.5;col*=clamp(1.-dot(vd,vd)*2.6,0.,1.);col*=.5;
+    gl_FragColor=vec4(col,1);}`;
+  function sh(t,s){const x=gl.createShader(t);gl.shaderSource(x,s);gl.compileShader(x);return x;}
+  const p=gl.createProgram();
+  gl.attachShader(p,sh(gl.VERTEX_SHADER,VS));gl.attachShader(p,sh(gl.FRAGMENT_SHADER,FS));gl.linkProgram(p);gl.useProgram(p);
+  const buf=gl.createBuffer();gl.bindBuffer(gl.ARRAY_BUFFER,buf);
+  gl.bufferData(gl.ARRAY_BUFFER,new Float32Array([-1,-1,1,-1,-1,1,1,1]),gl.STATIC_DRAW);
+  const av=gl.getAttribLocation(p,'a');gl.enableVertexAttribArray(av);gl.vertexAttribPointer(av,2,gl.FLOAT,false,0,0);
+  const uR=gl.getUniformLocation(p,'R'),uT=gl.getUniformLocation(p,'T');
+  (function loop(ts){gl.uniform2f(uR,c.width,c.height);gl.uniform1f(uT,ts*.001);gl.drawArrays(gl.TRIANGLE_STRIP,0,4);requestAnimationFrame(loop);})(0);
+})();
+
+/* PARTICLES */
+(function(){
+  const cv=document.getElementById('particles'),ctx=cv.getContext('2d');
+  const rs=()=>{cv.width=innerWidth;cv.height=innerHeight;};rs();window.addEventListener('resize',rs);
+  const N=innerWidth<480?35:65;
+  const pts=Array.from({length:N},()=>({x:Math.random()*innerWidth,y:Math.random()*innerHeight,vx:(Math.random()-.5)*.3,vy:(Math.random()-.5)*.3,r:Math.random()*1.4+.3,o:Math.random()*.18+.05,big:Math.random()<.08,bigR:Math.random()*45+25}));
+  const D=110;
+  (function draw(){
+    ctx.clearRect(0,0,cv.width,cv.height);
+    for(let i=0;i<pts.length;i++)for(let j=i+1;j<pts.length;j++){
+      const dx=pts[i].x-pts[j].x,dy=pts[i].y-pts[j].y,d=Math.sqrt(dx*dx+dy*dy);
+      if(d<D){ctx.beginPath();ctx.moveTo(pts[i].x,pts[i].y);ctx.lineTo(pts[j].x,pts[j].y);ctx.strokeStyle=`rgba(192,57,43,${.08*(1-d/D)})`;ctx.lineWidth=.6;ctx.stroke();}
+    }
+    pts.forEach(p=>{
+      if(p.big){const g=ctx.createRadialGradient(p.x,p.y,0,p.x,p.y,p.bigR);g.addColorStop(0,`rgba(175,25,15,${p.o*.55})`);g.addColorStop(1,'rgba(175,25,15,0)');ctx.beginPath();ctx.arc(p.x,p.y,p.bigR,0,Math.PI*2);ctx.fillStyle=g;ctx.fill();}
+      else{ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);ctx.fillStyle=`rgba(200,45,35,${p.o})`;ctx.fill();}
+      p.x+=p.vx;p.y+=p.vy;
+      if(p.x<-80)p.x=cv.width+80;if(p.x>cv.width+80)p.x=-80;
+      if(p.y<-80)p.y=cv.height+80;if(p.y>cv.height+80)p.y=-80;
+    });requestAnimationFrame(draw);
+  })();
+})();
+
+/* DISCORD PRESENCE */
+const DISCORD_ID='1297346059798052885';
+const AVATAR_URL='https://cdn.discordapp.com/avatars/1297346059798052885/173cf98e72b322d1099af74c7ceec019.png?size=128';
+const DECO_URL='https://cdn.discordapp.com/avatar-decoration-presets/a_3c97a2d37f433a7913a1c7b7a735d000.png';
+const STATUS_LABELS={online:'Online',idle:'Idle',dnd:'Do Not Disturb',offline:'Offline'};
+
+function applyPresence(data){
+  const status=data.discord_status||'offline';
+  const spotify=data.spotify;
+  const acts=data.activities||[];
+  document.getElementById('actLoading').style.display='none';
+  document.getElementById('actRow').style.display='flex';
+  const appIconEl=document.getElementById('actAppIcon');
+  appIconEl.innerHTML=`<img class="avatar-img" src="${AVATAR_URL}" alt="Rein." onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"><img class="deco-img" src="${DECO_URL}" alt="">`;
+  document.getElementById('actStatusPip').className=`act-status-pip ${status}`;
+  const gameIconEl=document.getElementById('actGameIcon');
+  const actDetail=document.getElementById('actDetail');
+  const actAppName=document.getElementById('actAppName');
+  document.getElementById('actUsername').textContent='rein.exch';
+  if(spotify){
+    actAppName.innerHTML=`<span style="color:#1DB954">Spotify</span><span class="app-tag">🎵 Listening</span>`;
+    actDetail.textContent=`${spotify.song} — ${spotify.artist}`;
+    gameIconEl.style.display='flex';
+    gameIconEl.innerHTML=spotify.album_art_url?`<img src="${spotify.album_art_url}" alt="album" style="width:100%;height:100%;object-fit:cover;border-radius:9px;">`:`<div class="act-game-icon-placeholder">🎵</div>`;
+    showMusicCard(spotify);
+  } else {
+    const game=acts.find(a=>a.type===0);
+    const custom=acts.find(a=>a.type===4);
+    hideMusicCard();
+    if(game){
+      const appId=game.application_id,largeImg=game.assets?.large_image;
+      actAppName.innerHTML=`<span>${game.name}</span>${game.details?`<span class="app-tag">${game.details}</span>`:''}`;
+      actDetail.textContent=game.state||STATUS_LABELS[status];
+      if(appId&&largeImg&&!largeImg.startsWith('mp:')&&!largeImg.startsWith('spotify:')){
+        gameIconEl.style.display='flex';
+        gameIconEl.innerHTML=`<img src="https://cdn.discordapp.com/app-assets/${appId}/${largeImg}.png" style="width:100%;height:100%;object-fit:cover;border-radius:9px;" onerror="this.parentNode.style.display='none'">`;
+      } else { gameIconEl.style.display='none'; }
+    } else {
+      actAppName.innerHTML=`<span>Discord</span>`;
+      actDetail.textContent=custom?.state||STATUS_LABELS[status];
+      gameIconEl.style.display='none';
+    }
+  }
+}
+function fetchPresence(){
+  fetch(`https://api.lanyard.rest/v1/users/${DISCORD_ID}`)
+    .then(r=>r.json()).then(j=>{if(j.success)applyPresence(j.data);})
+    .catch(()=>{document.getElementById('actLoading').style.display='none';document.getElementById('actRow').style.display='flex';document.getElementById('actDetail').textContent='Could not fetch presence';});
+}
+fetchPresence();setInterval(fetchPresence,30000);
+
+/* DISCORD PRESENCE — Account 2 (itzrein4u) */
+const DISCORD_ID_2='1253669815659532329';
+const AVATAR_URL_2='https://cdn.discordapp.com/avatars/1253669815659532329/0d1303d6ba252f0423d96e65421cf637.png?size=128';
+const DECO_URL_2='https://cdn.discordapp.com/avatar-decoration-presets/a_fc02e20ceb188461d1944825d2b3bfb3.png';
+
+function applyPresence2(data){
+  const status=data.discord_status||'offline';
+  const spotify=data.spotify;
+  const acts=data.activities||[];
+  document.getElementById('actLoading2').style.display='none';
+  document.getElementById('actRow2').style.display='flex';
+  const appIconEl=document.getElementById('actAppIcon2');
+  appIconEl.innerHTML=`<img class="avatar-img" src="${AVATAR_URL_2}" alt="Rein." onerror="this.src='https://cdn.discordapp.com/embed/avatars/0.png'"><img class="deco-img" src="${DECO_URL_2}" alt="">`;
+  document.getElementById('actStatusPip2').className=`act-status-pip ${status}`;
+  const gameIconEl=document.getElementById('actGameIcon2');
+  const actDetail=document.getElementById('actDetail2');
+  const actAppName=document.getElementById('actAppName2');
+  document.getElementById('actUsername2').textContent='itzrein4u';
+  if(spotify){
+    actAppName.innerHTML=`<span style="color:#1DB954">Spotify</span><span class="app-tag">🎵 Listening</span>`;
+    actDetail.textContent=`${spotify.song} — ${spotify.artist}`;
+    gameIconEl.style.display='flex';
+    gameIconEl.innerHTML=spotify.album_art_url?`<img src="${spotify.album_art_url}" alt="album" style="width:100%;height:100%;object-fit:cover;border-radius:9px;">`:`<div class="act-game-icon-placeholder">🎵</div>`;
+  } else {
+    const game=acts.find(a=>a.type===0);
+    const custom=acts.find(a=>a.type===4);
+    if(game){
+      const appId=game.application_id,largeImg=game.assets?.large_image;
+      actAppName.innerHTML=`<span>${game.name}</span>${game.details?`<span class="app-tag">${game.details}</span>`:''}`;
+      actDetail.textContent=game.state||STATUS_LABELS[status];
+      if(appId&&largeImg&&!largeImg.startsWith('mp:')&&!largeImg.startsWith('spotify:')){
+        gameIconEl.style.display='flex';
+        gameIconEl.innerHTML=`<img src="https://cdn.discordapp.com/app-assets/${appId}/${largeImg}.png" style="width:100%;height:100%;object-fit:cover;border-radius:9px;" onerror="this.parentNode.style.display='none'">`;
+      } else { gameIconEl.style.display='none'; }
+    } else {
+      actAppName.innerHTML=`<span>Discord</span>`;
+      actDetail.textContent=custom?.state||STATUS_LABELS[status];
+      gameIconEl.style.display='none';
+    }
+  }
+}
+function fetchPresence2(){
+  fetch(`https://api.lanyard.rest/v1/users/${DISCORD_ID_2}`)
+    .then(r=>r.json()).then(j=>{if(j.success)applyPresence2(j.data);})
+    .catch(()=>{document.getElementById('actLoading2').style.display='none';document.getElementById('actRow2').style.display='flex';document.getElementById('actDetail2').textContent='Could not fetch presence';});
+}
+fetchPresence2();setInterval(fetchPresence2,30000);
+
+/* MUSIC PLAYER — Spotify live only */
+let spProgressTimer = null;
+
+function showMusicCard(sp) {
+  const card = document.getElementById('musicCard');
+  const art  = document.getElementById('musicArt');
+  const title  = document.getElementById('musicTitle');
+  const artist = document.getElementById('musicArtist');
+
+  // Populate content
+  title.textContent  = sp.song   || 'Unknown Track';
+  artist.textContent = sp.artist || sp.album || '—';
+
+  if (sp.album_art_url) {
+    art.innerHTML = `<img src="${sp.album_art_url}" alt="album" style="width:100%;height:100%;object-fit:cover;border-radius:8px;">`;
+  } else {
+    art.innerHTML = ``;
+  }
+
+  // Progress from Lanyard timestamps
+  const start = sp.timestamps?.start;
+  const end   = sp.timestamps?.end;
+  if (start && end) {
+    const total = end - start;
+    document.getElementById('timeDuration').textContent = fmtMs(total);
+    clearInterval(spProgressTimer);
+    spProgressTimer = setInterval(() => {
+      const now     = Date.now();
+      const elapsed = Math.max(0, now - start);
+      const pct     = Math.min(100, (elapsed / total) * 100);
+      document.getElementById('progressFill').style.width = pct + '%';
+      document.getElementById('timeElapsed').textContent  = fmtMs(Math.min(elapsed, total));
+      if (now >= end) clearInterval(spProgressTimer);
+    }, 500);
+  }
+
+  // Disc spin = always playing on Spotify
+  card.classList.add('playing');
+
+  // Show with animation
+  card.classList.add('spotify-active');
+  requestAnimationFrame(() => requestAnimationFrame(() => card.classList.add('spotify-visible')));
+}
+
+function hideMusicCard() {
+  const card = document.getElementById('musicCard');
+  card.classList.remove('spotify-visible');
+  clearInterval(spProgressTimer);
+  setTimeout(() => card.classList.remove('spotify-active','playing'), 500);
+}
+
+function fmtMs(ms) {
+  const s = Math.floor(ms / 1000);
+  return `${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}`;
+}
+
+/* CURSOR TRAIL */
+if(!('ontouchstart' in window)){document.addEventListener('mousemove',e=>{const t=document.createElement('div');t.className='cursor-trail';t.style.cssText=`left:${e.clientX}px;top:${e.clientY}px`;document.body.appendChild(t);setTimeout(()=>{t.style.opacity='0';setTimeout(()=>t.remove(),400);},60);});}
+
+/* BACKGROUND SPARKLES */
+(function(){
+  const canvas = document.createElement('canvas');
+  canvas.style.cssText = 'position:fixed;inset:0;z-index:6;pointer-events:none;';
+  canvas.id = 'sparkle-canvas';
+  document.body.appendChild(canvas);
+  const ctx = canvas.getContext('2d');
+
+  const resize = () => { canvas.width = innerWidth; canvas.height = innerHeight; };
+  resize();
+  window.addEventListener('resize', resize);
+
+  const NUM = 110;
+  const sparks = Array.from({length: NUM}, () => ({
+    x: Math.random() * innerWidth,
+    y: Math.random() * innerHeight,
+    r: Math.random() * 1.5 + 0.3,
+    alpha: Math.random(),
+    speed: Math.random() * 0.008 + 0.004,
+    phase: Math.random() * Math.PI * 2,
+    drift: (Math.random() - 0.5) * 0.15,
+    rise: -(Math.random() * 0.25 + 0.05),
+  }));
+
+  const ACCENT = 'rgba(220,60,40,A)';
+
+  function draw(ts) {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    sparks.forEach(s => {
+      s.phase += s.speed;
+      const a = (Math.sin(s.phase) * 0.5 + 0.5) * 0.75 + 0.05;
+      const scale = 0.6 + Math.sin(s.phase * 1.3) * 0.4;
+
+      ctx.save();
+      ctx.translate(s.x, s.y);
+      ctx.scale(scale, scale);
+
+      // 4-point star
+      ctx.beginPath();
+      const r1 = s.r, r2 = s.r * 0.3;
+      for (let i = 0; i < 8; i++) {
+        const angle = (i * Math.PI) / 4;
+        const r = i % 2 === 0 ? r1 : r2;
+        i === 0 ? ctx.moveTo(Math.cos(angle)*r, Math.sin(angle)*r)
+                : ctx.lineTo(Math.cos(angle)*r, Math.sin(angle)*r);
+      }
+      ctx.closePath();
+
+      const grd = ctx.createRadialGradient(0, 0, 0, 0, 0, s.r * 2.5);
+      grd.addColorStop(0, ACCENT.replace('A', String(a)));
+      grd.addColorStop(1, ACCENT.replace('A', '0'));
+      ctx.fillStyle = grd;
+      ctx.fill();
+
+      // tiny glow dot center
+      ctx.beginPath();
+      ctx.arc(0, 0, s.r * 0.5, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(255,255,255,${a * 0.9})`;
+      ctx.fill();
+
+      ctx.restore();
+
+      s.x += s.drift;
+      s.y += s.rise;
+      if (s.y < -10) { s.y = canvas.height + 10; s.x = Math.random() * canvas.width; }
+      if (s.x < -10) s.x = canvas.width + 10;
+      if (s.x > canvas.width + 10) s.x = -10;
+    });
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+
+</script>
+</body>
+</html>
